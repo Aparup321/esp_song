@@ -18,6 +18,7 @@ mic = sc.get_microphone(
 
 running = True
 
+# Store previous heights for smoothing
 previous_heights = [0] * 32
 
 with mic.recorder(samplerate=48000) as recorder:
@@ -35,63 +36,99 @@ with mic.recorder(samplerate=48000) as recorder:
         # Convert stereo audio to mono
         audio = np.mean(audio, axis=1)
 
-        # Calculate audio volume
-        volume = np.linalg.norm(audio)
-        volume_level = int(volume * 100)
+        # Create Hann window
+        window = np.hanning(len(audio))
 
-        print(volume_level)
+        # Apply window to audio
+        windowed_audio = audio * window
 
-        # Convert audio to frequency data
-        fft = np.abs(np.fft.rfft(audio))
+        # Perform FFT
+        fft = np.abs(np.fft.rfft(windowed_audio))
 
-        # Divide frequency data into 32 bars
-        frequencies = np.fft.rfftfreq(len(audio), 1 / 48000)
+        # Normalize FFT magnitude
+        fft = fft * (2 / len(audio))
 
-        frequency_ranges = np.geomspace(20, 20000, 33)
+        # Convert magnitude to decibels
+        fft = 20 * np.log10(np.maximum(fft, 1e-10))
+
+        # Get frequency of each FFT bin
+        frequencies = np.fft.rfftfreq(
+            len(audio),
+            1 / 48000
+        )
+
+        # Create 32 logarithmic frequency ranges
+        frequency_ranges = np.geomspace(
+            20,
+            20000,
+            33
+        )
 
         bars = []
 
+        # Divide frequencies into 32 bars
         for i in range(32):
+
             low = frequency_ranges[i]
             high = frequency_ranges[i + 1]
 
-            mask = (frequencies >= low) & (frequencies < high)
+            mask = (
+                (frequencies >= low) &
+                (frequencies < high)
+            )
 
             if np.any(mask):
                 bars.append(fft[mask])
             else:
                 bars.append(np.array([0]))
 
+        # Draw background
         screen.fill((10, 10, 10))
 
-        # Draw the visualizer bars
+        # Draw visualizer bars
         for i, bar in enumerate(bars):
 
+            # Average value of this frequency range
             value = np.mean(bar)
-            #compress large FFT values
-            value = np.log1p(value)
 
-            height = int(value * 100)
+            # Convert dB value into screen height
+            height = int(
+                np.interp(
+                    value,
+                    [-60, -5],
+                    [0, 400]
+                )
+            )
+
+            # Prevent bars from becoming taller than 400 pixels
             height = min(height, 400)
 
-            # Smooth the movement
+            # Smooth bar movement
             if height > previous_heights[i]:
                 previous_heights[i] += 5
             else:
                 previous_heights[i] -= 3
 
-            previous_heights[i] = max(0, previous_heights[i])
+            # Prevent negative height
+            previous_heights[i] = max(
+                0,
+                previous_heights[i]
+            )
+
             height = previous_heights[i]
 
+            # Calculate bar position
             x = 20 + i * 24
             y = 450 - height
 
+            # Draw bar
             pygame.draw.rect(
                 screen,
                 (0, 200, 255),
                 (x, y, 18, height)
             )
 
+        # Update display
         pygame.display.flip()
 
 pygame.quit()
