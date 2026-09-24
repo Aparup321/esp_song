@@ -30,7 +30,7 @@ with mic.recorder(samplerate=48000) as recorder:
                 running = False
 
         # Capture audio
-        audio = recorder.record(numframes=1024)
+        audio = recorder.record(numframes=2048)
 
         # Convert stereo audio to mono
         audio = np.mean(audio, axis=1)
@@ -68,8 +68,10 @@ with mic.recorder(samplerate=48000) as recorder:
         for i, bar in enumerate(bars):
 
             value = np.mean(bar)
+            #compress large FFT values
+            value = np.log1p(value)
 
-            height = int(value * 5)
+            height = int(value * 100)
             height = min(height, 400)
 
             # Smooth the movement
@@ -78,7 +80,7 @@ with mic.recorder(samplerate=48000) as recorder:
             else:
                 previous_heights[i] -= 3
 
-                previous_heights[i] = max(0, previous_heights[i])
+            previous_heights[i] = max(0, previous_heights[i])
             height = previous_heights[i]
 
             x = 20 + i * 24
