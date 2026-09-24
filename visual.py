@@ -28,6 +28,12 @@ with mic.recorder(samplerate=48000) as recorder:
 
         audio = np.mean(audio, axis=1)
 
+        volume = np.linalg.norm(audio)
+
+        height = int(volume * 100)
+
+        print(height)
+
         fft = np.abs(np.fft.rfft(audio))
 
         bars = np.array_split(fft, 32)
