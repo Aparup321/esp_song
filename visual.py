@@ -28,18 +28,27 @@ with mic.recorder(samplerate=48000) as recorder:
 
         audio = np.mean(audio, axis=1)
 
-        volume = np.abs(audio).mean()
+        fft = np.abs(np.fft.rfft(audio))
 
-        bar_height = int(volume * 1000)
-        bar_height = min(bar_height, 400)
+        bars = np.array_split(fft, 32)
 
         screen.fill((10, 10, 10))
 
-        pygame.draw.rect(
-            screen,
-            (0, 200, 255),
-            (350, 450 - bar_height, 100, bar_height)
-        )
+        for i, bar in enumerate(bars):
+
+             value = np.mean(bar)
+
+             height = int(value * 5)
+             height = min(height, 400)
+
+             x = 20 + i * 24
+             y = 450 - height
+
+             pygame.draw.rect(
+                 screen,
+                (0, 200, 255),
+                (x, y, 18, height)
+             )
 
         pygame.display.flip()
 
