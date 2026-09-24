@@ -5,7 +5,11 @@ import numpy as np
 # Initialize Pygame
 pygame.init()
 
-screen = pygame.display.set_mode((800, 500))
+# Step 3: Portrait player layout (OLED-ready zones)
+WIDTH, HEIGHT = 400, 700
+TOP_H, MID_H, BOT_H = 380, 120, 200
+
+screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Music Visualizer")
 
 # Get speaker and microphone
@@ -20,6 +24,8 @@ running = True
 
 # Store previous heights for smoothing
 previous_heights = [0] * 32
+
+clock = pygame.time.Clock()
 
 with mic.recorder(samplerate=48000) as recorder:
 
@@ -82,10 +88,20 @@ with mic.recorder(samplerate=48000) as recorder:
             else:
                 bars.append(np.array([0]))
 
-        # Draw background
+        # Draw background zones
+        # Top: album placeholder (blank black for now)
         screen.fill((10, 10, 10))
+        pygame.draw.rect(screen, (10, 10, 10), (0, 0, WIDTH, TOP_H))
+        # Mid: text + progress zone (Step 5)
+        pygame.draw.rect(screen, (16, 16, 16), (0, TOP_H, WIDTH, MID_H))
+        # Bottom: bars + controls zone
+        pygame.draw.rect(screen, (10, 10, 10), (0, TOP_H + MID_H, WIDTH, BOT_H))
+        # Zone dividers
+        pygame.draw.line(screen, (40, 40, 40), (0, TOP_H), (WIDTH, TOP_H))
+        pygame.draw.line(screen, (40, 40, 40), (0, TOP_H + MID_H), (WIDTH, TOP_H + MID_H))
 
-        # Draw visualizer bars
+        # Draw visualizer bars (temp fit: 32 bars into 400px width, bottom zone)
+        bar_w = WIDTH // 32
         for i, bar in enumerate(bars):
 
             # Average value of this frequency range
@@ -117,18 +133,20 @@ with mic.recorder(samplerate=48000) as recorder:
 
             height = previous_heights[i]
 
-            # Calculate bar position
-            x = 20 + i * 24
-            y = 450 - height
+            # Calculate bar position (bottom zone, temp fit for Step 3)
+            x = i * bar_w + 1
+            y = (TOP_H + MID_H + BOT_H - 10) - height
+            bar_draw_w = bar_w - 2
 
             # Draw bar
             pygame.draw.rect(
                 screen,
                 (0, 200, 255),
-                (x, y, 18, height)
+                (x, y, bar_draw_w, height)
             )
 
         # Update display
         pygame.display.flip()
+        clock.tick(30)
 
 pygame.quit()

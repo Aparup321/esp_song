@@ -1,0 +1,76 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+.python-version
+
+# Audio temp / local test files
+*.wav
+*.mp3.bak
+recording_*.wav
+
+# Serial / debug logs
+*.log
+serial_*.txt
+packet_dump_*.bin
+
+# ESP32-C3 / Arduino
+*.bin
+*.elf
+*.map
+*.hex
+build/
+.pio/
+.platformio/
+arduino_build/
+*.code-workspace
+
+# OLED / image temp
+*.bmp.bak
+*.pbm.bak
+font_convert_output/
+
+# OS
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+*~
+*.swp
+*.swo
+
+# VSCode - keep agent.md tracked, ignore local history/cache
+.vscode/history/
+.vscode/*.log
+*.code-workspace
+
+# Env / secrets (COM port, API keys for Spotify later)
+.env
+.env.local
+secrets.py
+config_local.py

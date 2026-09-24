@@ -111,13 +111,15 @@ Portrait player card `400x700`, black background:
 
 Audio chain unchanged: `48000Hz, 2048 frames, mono, Hann, RFFT, 2/N, dB, geomspace(20,20000), interp [-60,-5] -> [0,80], smooth +5/-3`.
 
+Locked Step 2 (verified 2026-09-24, no code change): latency `42.67ms`, resolution `23.44Hz`, `1025 bins`, FFT ends `visual.py:83`, draw starts `:86`. Synthetic 440Hz -> peak 445Hz -12dB OK. Known: low log bands 1,2,4 have 0 bins (flicker risk, fix in Step 4 by merging).
+
 C3 role (no OLED yet): receive `0xFF + 24 bytes` over USB-Serial 115200, blink onboard LED to bass. No FFT/WiFi/display on C3 yet.
 
 ## 5. 8-Step Plan (C3 only, OLED on hold)
 
 1. Setup Check - DONE (see §6)
-2. Lock Audio Pipeline
-3. Portrait Layout
+2. Lock Audio Pipeline - DONE (see §4 lock note)
+3. Portrait Layout - DONE (400x700, zones 380/120/200, 32 bars temp-fit w=12, tick 30)
 4. Bottom Mini Visualizer (32 -> 24 bars)
 5. Text + Progress + Dummy Controls
 6. Serial Protocol on Laptop
