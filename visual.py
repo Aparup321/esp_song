@@ -12,6 +12,13 @@ TOP_H, MID_H, BOT_H = 380, 120, 200
 screen = pygame.display.set_mode((WIDTH, HEIGHT))
 pygame.display.set_caption("Music Visualizer")
 
+# Step 5: fonts + fake song timer (dummy metadata for now)
+title_font = pygame.font.SysFont(None, 32)
+artist_font = pygame.font.SysFont(None, 22)
+time_font = pygame.font.SysFont(None, 16)
+song_pos = 30.0  # start at 0:30 like reference image
+SONG_TOTAL = 4 * 60 + 25  # 4:25
+
 # Get speaker and microphone
 speaker = sc.default_speaker()
 
@@ -99,6 +106,46 @@ with mic.recorder(samplerate=48000) as recorder:
         # Zone dividers
         pygame.draw.line(screen, (40, 40, 40), (0, TOP_H), (WIDTH, TOP_H))
         pygame.draw.line(screen, (40, 40, 40), (0, TOP_H + MID_H), (WIDTH, TOP_H + MID_H))
+
+        # Step 5: fake timer + text + progress (dummy, no real metadata yet)
+        song_pos += 1.0 / 30.0
+        if song_pos >= SONG_TOTAL:
+            song_pos = 0.0
+        mid_y = TOP_H
+        title_surf = title_font.render("Perfect", True, (255, 255, 255))
+        artist_surf = artist_font.render("Edsheeran", True, (170, 170, 170))
+        screen.blit(title_surf, (20, mid_y + 8))
+        screen.blit(artist_surf, (20, mid_y + 38))
+        cur_m, cur_s = int(song_pos // 60), int(song_pos % 60)
+        tot_m, tot_s = int(SONG_TOTAL // 60), int(SONG_TOTAL % 60)
+        time_surf = time_font.render(f"{cur_m}:{cur_s:02d}", True, (150, 150, 150))
+        total_surf = time_font.render(f"{tot_m}:{tot_s:02d}", True, (150, 150, 150))
+        screen.blit(time_surf, (20, mid_y + 62))
+        screen.blit(total_surf, (WIDTH - 50, mid_y + 62))
+        # Progress line + dot
+        px1, px2, py = 20, WIDTH - 20, mid_y + 92
+        pygame.draw.line(screen, (60, 60, 60), (px1, py), (px2, py), 2)
+        frac = song_pos / SONG_TOTAL
+        dot_x = int(px1 + frac * (px2 - px1))
+        pygame.draw.line(screen, (255, 255, 255), (px1, py), (dot_x, py), 2)
+        pygame.draw.circle(screen, (255, 255, 255), (dot_x, py), 4)
+
+        # Step 5: dummy controls row (no click logic yet)
+        cy = TOP_H + MID_H + 40
+        # shuffle (x-cross) at 60
+        pygame.draw.line(screen, (150, 150, 150), (50, cy - 8), (70, cy + 8), 2)
+        pygame.draw.line(screen, (150, 150, 150), (50, cy + 8), (70, cy - 8), 2)
+        # prev at 130: bar + left triangle
+        pygame.draw.rect(screen, (255, 255, 255), (112, cy - 10, 4, 20))
+        pygame.draw.polygon(screen, (255, 255, 255), [(140, cy - 10), (140, cy + 10), (120, cy)])
+        # play at 200: circle + triangle
+        pygame.draw.circle(screen, (255, 255, 255), (200, cy), 20, 2)
+        pygame.draw.polygon(screen, (255, 255, 255), [(194, cy - 10), (194, cy + 10), (210, cy)])
+        # next at 270: right triangle + bar
+        pygame.draw.polygon(screen, (255, 255, 255), [(260, cy - 10), (260, cy + 10), (280, cy)])
+        pygame.draw.rect(screen, (255, 255, 255), (284, cy - 10, 4, 20))
+        # repeat at 340: rect loop
+        pygame.draw.rect(screen, (150, 150, 150), (328, cy - 8, 24, 16), 2)
 
         # Draw visualizer bars (Step 4: 24 white mini-bars, max 80px)
         bar_w, bar_gap, bar_margin = 12, 4, 8
