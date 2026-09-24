@@ -18,6 +18,8 @@ mic = sc.get_microphone(
 
 running = True
 
+previous_heights = [0] * 32
+
 with mic.recorder(samplerate=48000) as recorder:
 
     while running:
@@ -43,7 +45,22 @@ with mic.recorder(samplerate=48000) as recorder:
         fft = np.abs(np.fft.rfft(audio))
 
         # Divide frequency data into 32 bars
-        bars = np.array_split(fft, 32)
+        frequencies = np.fft.rfftfreq(len(audio), 1 / 48000)
+
+        frequency_ranges = np.geomspace(20, 20000, 33)
+
+        bars = []
+
+        for i in range(32):
+            low = frequency_ranges[i]
+            high = frequency_ranges[i + 1]
+
+            mask = (frequencies >= low) & (frequencies < high)
+
+            if np.any(mask):
+                bars.append(fft[mask])
+            else:
+                bars.append(np.array([0]))
 
         screen.fill((10, 10, 10))
 
@@ -54,6 +71,15 @@ with mic.recorder(samplerate=48000) as recorder:
 
             height = int(value * 5)
             height = min(height, 400)
+
+            # Smooth the movement
+            if height > previous_heights[i]:
+                previous_heights[i] += 5
+            else:
+                previous_heights[i] -= 3
+
+                previous_heights[i] = max(0, previous_heights[i])
+            height = previous_heights[i]
 
             x = 20 + i * 24
             y = 450 - height
