@@ -120,7 +120,7 @@ C3 role (no OLED yet): receive `0xFF + 24 bytes` over USB-Serial 115200, blink o
 1. Setup Check - DONE (see §6)
 2. Lock Audio Pipeline - DONE (see §4 lock note)
 3. Portrait Layout - DONE (400x700, zones 380/120/200, 32 bars temp-fit w=12, tick 30)
-4. Bottom Mini Visualizer (32 -> 24 bars)
+4. Bottom Mini Visualizer (32 -> 24 bars) - DONE (24 log bands, white, 0-80px, w12/gap4, width 396/400, empty bands [1,3])
 5. Text + Progress + Dummy Controls
 6. Serial Protocol on Laptop
 7. C3 Firmware Without Screen

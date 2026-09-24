@@ -23,7 +23,7 @@ mic = sc.get_microphone(
 running = True
 
 # Store previous heights for smoothing
-previous_heights = [0] * 32
+previous_heights = [0] * 24
 
 clock = pygame.time.Clock()
 
@@ -63,17 +63,17 @@ with mic.recorder(samplerate=48000) as recorder:
             1 / 48000
         )
 
-        # Create 32 logarithmic frequency ranges
+        # Create 24 logarithmic frequency ranges (Step 4: OLED-fit)
         frequency_ranges = np.geomspace(
             20,
             20000,
-            33
+            25
         )
 
         bars = []
 
-        # Divide frequencies into 32 bars
-        for i in range(32):
+        # Divide frequencies into 24 bars
+        for i in range(24):
 
             low = frequency_ranges[i]
             high = frequency_ranges[i + 1]
@@ -100,24 +100,24 @@ with mic.recorder(samplerate=48000) as recorder:
         pygame.draw.line(screen, (40, 40, 40), (0, TOP_H), (WIDTH, TOP_H))
         pygame.draw.line(screen, (40, 40, 40), (0, TOP_H + MID_H), (WIDTH, TOP_H + MID_H))
 
-        # Draw visualizer bars (temp fit: 32 bars into 400px width, bottom zone)
-        bar_w = WIDTH // 32
+        # Draw visualizer bars (Step 4: 24 white mini-bars, max 80px)
+        bar_w, bar_gap, bar_margin = 12, 4, 8
         for i, bar in enumerate(bars):
 
             # Average value of this frequency range
             value = np.mean(bar)
 
-            # Convert dB value into screen height
+            # Convert dB value into screen height (Step 4: mini-strip)
             height = int(
                 np.interp(
                     value,
                     [-60, -5],
-                    [0, 400]
+                    [0, 80]
                 )
             )
 
-            # Prevent bars from becoming taller than 400 pixels
-            height = min(height, 400)
+            # Prevent bars from becoming taller than 80 pixels
+            height = min(height, 80)
 
             # Smooth bar movement
             if height > previous_heights[i]:
@@ -133,16 +133,15 @@ with mic.recorder(samplerate=48000) as recorder:
 
             height = previous_heights[i]
 
-            # Calculate bar position (bottom zone, temp fit for Step 3)
-            x = i * bar_w + 1
+            # Calculate bar position (bottom zone, Step 4 fit)
+            x = bar_margin + i * (bar_w + bar_gap)
             y = (TOP_H + MID_H + BOT_H - 10) - height
-            bar_draw_w = bar_w - 2
 
-            # Draw bar
+            # Draw bar (white for 1-bit OLED parity)
             pygame.draw.rect(
                 screen,
-                (0, 200, 255),
-                (x, y, bar_draw_w, height)
+                (255, 255, 255),
+                (x, y, bar_w, height)
             )
 
         # Update display
