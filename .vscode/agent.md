@@ -4,22 +4,35 @@
 
 This project is a real-time audio visualizer built with Python.
 
-The program captures audio from a microphone, processes the audio data, calculates its strength, and converts the audio information into visual elements on the screen using Pygame.
+The program captures the audio currently playing on the computer, processes the audio data using NumPy, analyzes its frequency components using FFT, and displays the result as animated visualization bars using Pygame.
 
-The main goal is to understand how raw microphone audio can be processed with Python and turned into a real-time visualization.
+The project starts as a Python-based desktop visualizer. The long-term goal is to develop the visualization into a music-player style interface (reference image, no album art for now) on laptop screen, and later send the processed visualization data to an ESP32-C3 with an OLED display (on hold until screen arrives).
+
+The main goal is to understand how real-time audio can be captured, processed, analyzed, and converted into visual information.
 
 ---
 
 ## 2. Main Technologies
 
-* **Python** - Main programming language
-* **NumPy** - Numerical and audio-data processing
-* **SoundCard** - Capturing audio from the microphone
-* **Pygame** - Creating the visual interface and animation
+- **Python 3.14.7** - Main programming language
+- **NumPy 2.5.3** - Numerical and audio-data processing
+- **SoundCard 0.4.6** - Capturing computer audio through loopback
+- **pygame-ce 2.5.8** - Creating the visual interface and animation (replacement for pygame, no 3.14 wheel for pygame 2.6.1)
+- **pyserial 3.5** - Laptop -> ESP32-C3 serial link (115200 baud)
+
+Current hardware in hand:
+
+- **ESP32-C3** - Main microcontroller (S3 ignored for now)
+- **Laptop screen** - Temporary output (400x700 portrait player UI)
+
+On-hold hardware (do NOT code yet):
+
+- **OLED SSD1306 128x64 I2C** - Not yet received, will inform when available
+- No album-art section for now (top zone stays blank black)
 
 ---
 
-## 3. Complete Project Flow
+## 3. Current Project Flow
 
 ```text
 START
@@ -31,7 +44,10 @@ Import Libraries
 Initialize Pygame
   |
   v
-Get Microphone
+Get Default Speaker
+  |
+  v
+Create Loopback Audio Capture
   |
   v
 Start Audio Recorder
@@ -40,16 +56,25 @@ Start Audio Recorder
 Capture Audio Frames
   |
   v
-Process Audio Data
-  |
-  v
 Convert Stereo Audio to Mono
   |
   v
-Calculate Audio Volume
+Apply Hann Window
   |
   v
-Convert Volume to Visual Value
+Perform FFT
+  |
+  v
+Convert FFT Magnitude to dB
+  |
+  v
+Divide Frequencies into 32 Bands
+  |
+  v
+Calculate Bar Values
+  |
+  v
+Apply Bar Smoothing
   |
   v
 Draw Visualizer
@@ -76,317 +101,33 @@ Repeat
 
 ---
 
-## 4. Core Audio Pipeline
+## 4. Target UI (reference image, no album for now)
 
-The most important pipeline of the project is:
+Portrait player card `400x700`, black background:
 
-```text
-Microphone
-    |
-    v
-Audio Frames
-    |
-    v
-NumPy Processing
-    |
-    v
-Audio Volume / Strength
-    |
-    v
-Visual Value
-    |
-    v
-Pygame
-    |
-    v
-Screen
-```
+- Top 0-380: blank black (album placeholder, skipped)
+- Mid 380-500: Title `Perfect / Edsheeran`, time `0:30 / 4:25`, progress line + dot (fake timer)
+- Bottom 500-700: 24 white mini-bars max 80px + dummy icons `shuffle, prev, play, next, repeat`
 
----
+Audio chain unchanged: `48000Hz, 2048 frames, mono, Hann, RFFT, 2/N, dB, geomspace(20,20000), interp [-60,-5] -> [0,80], smooth +5/-3`.
 
-## 5. Current Code Concepts
+C3 role (no OLED yet): receive `0xFF + 24 bytes` over USB-Serial 115200, blink onboard LED to bass. No FFT/WiFi/display on C3 yet.
 
-### 5.1 Creating the Recorder
+## 5. 8-Step Plan (C3 only, OLED on hold)
 
-```python
-with mic.recorder(samplerate=48000) as recorder:
-```
+1. Setup Check - DONE (see §6)
+2. Lock Audio Pipeline
+3. Portrait Layout
+4. Bottom Mini Visualizer (32 -> 24 bars)
+5. Text + Progress + Dummy Controls
+6. Serial Protocol on Laptop
+7. C3 Firmware Without Screen
+8. Integrate + Hold for OLED
 
-This creates a microphone recording session.
+## 6. Env Status - Step 1 DONE 2026-09-24
 
-* `mic` represents the microphone.
-* `recorder()` creates a recording session.
-* `samplerate=48000` means the audio is captured at 48,000 samples/frames per second.
-* `as recorder` stores the recording-session object in the variable `recorder`.
-* `with` manages the recording session and automatically cleans it up when the block finishes.
-
----
-
-### 5.2 Capturing Audio
-
-```python
-audio = recorder.record(numframes=1024)
-```
-
-This captures 1,024 audio frames from the microphone.
-
-The returned audio data is stored in the variable `audio`.
-
-With a sample rate of 48,000 frames per second:
-
-```text
-48,000 frames = 1 second
-1,024 frames ≈ 0.0213 seconds
-```
-
-So the program processes small chunks of audio continuously.
-
----
-
-### 5.3 Converting Stereo to Mono
-
-```python
-audio = np.mean(audio, axis=1)
-```
-
-If the microphone provides two channels, such as left and right:
-
-```text
-Left    Right
-0.2     0.4
-0.3     0.5
-0.1     0.2
-```
-
-`np.mean(..., axis=1)` calculates the average of the channels for each frame.
-
-The result is one value per frame.
-
-```text
-Stereo Audio
-     |
-     v
-Left + Right
-     |
-     v
-Average
-     |
-     v
-Mono Audio
-```
-
----
-
-## 6. Audio Volume Calculation
-
-After converting the audio to mono, the project calculates the strength of the current audio chunk.
-
-Example:
-
-```python
-volume = np.linalg.norm(audio)
-```
-
-`np.linalg.norm()` produces a single value representing the overall strength of the audio samples.
-
-The value can then be scaled and used to control the height of a visualizer bar.
-
-```text
-Audio samples
-     |
-     v
-Calculate volume
-     |
-     v
-Scale volume
-     |
-     v
-Bar height
-```
-
----
-
-## 7. Visualization
-
-Pygame is responsible for displaying the processed audio information.
-
-The basic visualizer works like this:
-
-```text
-Quiet sound
-    |
-    v
-Short bar
-
-Loud sound
-    |
-    v
-Tall bar
-```
-
-The program continuously updates the bar according to the incoming audio.
-
----
-
-## 8. Main Program Architecture
-
-The project can eventually be organized like this:
-
-```text
-audio_visualizer/
-|
-├── main.py
-|
-├── audio/
-|   ├── __init__.py
-|   └── recorder.py
-|
-├── visualizer/
-|   ├── __init__.py
-|   └── display.py
-|
-├── config.py
-|
-├── requirements.txt
-|
-└── README.md
-```
-
-For the learning/development stage, keeping the project in a single `main.py` file is recommended.
-
-The code can be separated into modules after the main visualizer is working.
-
----
-
-## 9. Development Stages
-
-### Stage 1 - Audio Capture
-
-Learn and implement:
-
-* Microphone selection
-* SoundCard recorder
-* Sample rate
-* Audio frames
-* NumPy arrays
-
-### Stage 2 - Audio Processing
-
-Learn and implement:
-
-* Mono conversion
-* Audio amplitude/volume
-* NumPy operations
-* Scaling values
-
-### Stage 3 - Basic Visualization
-
-Learn and implement:
-
-* Pygame window
-* Drawing rectangles
-* Mapping volume to bar height
-* Screen updates
-
-### Stage 4 - Real-Time Loop
-
-Learn and implement:
-
-* Continuous audio capture
-* Pygame event handling
-* Frame rate
-* Smooth updates
-* Program shutdown
-
-### Stage 5 - Advanced Visualization
-
-Learn and implement:
-
-* FFT
-* Frequency analysis
-* Multiple bars
-* Waveforms
-* Smoother animations
-
----
-
-## 10. Future Improvements
-
-Once the basic visualizer works, the project can be extended with:
-
-* Multiple visualization bars
-* Waveform visualization
-* Frequency spectrum visualization
-* FFT-based frequency analysis
-* Smoother bar animation
-* Bass/mid/treble visualization
-* Better UI
-* Different visual effects
-* Music-file input instead of only microphone input
-* Audio-reactive animations
-
-These are extensions to the basic project and are not required for the first working version.
-
----
-
-## 11. Current Progress
-
-Completed concepts:
-
-* [x] Microphone object
-* [x] Audio recorder
-* [x] Sample rate
-* [x] Audio frame capture
-* [x] Understanding `with`
-* [x] Understanding `recorder.record()`
-* [x] Understanding `np.mean()`
-* [x] Understanding `axis=1`
-
-Current stage:
-
-```text
-Microphone
-    |
-    v
-Capture 1024 frames
-    |
-    v
-Convert stereo to mono
-    |
-    v
->>> NEXT: Calculate audio volume
-```
-
----
-
-## 12. Final Goal
-
-The finished basic project should continuously listen to audio from the microphone and display the audio strength visually in real time.
-
-```text
-             Microphone
-                  |
-                  v
-            Capture Audio
-                  |
-                  v
-             Process Audio
-                  |
-                  v
-           Calculate Volume
-                  |
-                  v
-           Generate Visuals
-                  |
-                  v
-                Pygame
-                  |
-                  v
-            Visual Display
-                  |
-                  └──────> Repeat
-```
-
-The final result will be a real-time Python audio visualizer that connects:
-
-**Microphone → Audio Processing → NumPy → Visualization → Pygame → Screen**
+- Python 3.14.7, pip 26.2.1
+- numpy 2.5.3, pygame-ce 2.5.8, soundcard 0.4.6, pyserial 3.5
+- `visual.py` compiles OK, imports OK
+- Speakers found: 2, default `Speakers (AB13X USB Audio)`
+- Note: `pygame` 2.6.1 has no 3.14 wheel, use `pygame-ce` (`import pygame` still works)
