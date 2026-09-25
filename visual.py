@@ -60,7 +60,7 @@ if HAS_SERIAL:
         else:
             print("[serial] no COM port found, display-only mode")
     except Exception as e:
-        print(f"[serial] open failed ({e}), display-only mode")
+        print(f"[serial] open failed ({e}), display-only mode (close Arduino Serial Monitor if COM busy)")
         ser = None
 
 frame_count = 0
