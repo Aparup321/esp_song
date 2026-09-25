@@ -15,6 +15,7 @@ const uint8_t HDR = 0xFF;
 const uint8_t BASS_N = 6;       // bars 0-5 = low freqs
 const uint8_t BASS_THRESH = 5; // 0-80 scale, your music peaks ~15 so 5 catches the beat
 uint8_t ledState = LOW; // toggles on every loud beat, visible on any LED polarity
+unsigned long lastBeat = 0; // slowest visible blink: max ~6 flips/sec
 uint8_t bars[N_BARS];
 uint8_t idx = 0;
 bool inPacket = false;
@@ -58,10 +59,14 @@ void onPacket() {
   uint16_t sum = 0;
   for (uint8_t i = 0; i < BASS_N; i++) sum += bars[i];
   uint8_t bass = sum / BASS_N;
-  // Toggle on every loud beat: visible whether your LED is ON-type or OFF-type
+  // Toggle on every loud beat (max 6/sec so eyes can see it)
   if (bass >= BASS_THRESH) {
-    ledState = (ledState == LOW) ? HIGH : LOW;
-    digitalWrite(LED_PIN, ledState);
+    unsigned long now2 = millis();
+    if (now2 - lastBeat > 150) {
+      lastBeat = now2;
+      ledState = (ledState == LOW) ? HIGH : LOW;
+      digitalWrite(LED_PIN, ledState);
+    }
   }
   unsigned long now = millis();
   if (now - lastLog > 500) {
