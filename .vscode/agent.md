@@ -122,7 +122,7 @@ C3 role (no OLED yet): receive `0xFF + 24 bytes` over USB-Serial 115200, blink o
 3. Portrait Layout - DONE (400x700, zones 380/120/200, 32 bars temp-fit w=12, tick 30)
 4. Bottom Mini Visualizer (32 -> 24 bars) - DONE (24 log bands, white, 0-80px, w12/gap4, width 396/400, empty bands [1,3])
 5. Text + Progress + Dummy Controls - DONE (SysFont 32/22/16, fake 0:30/4:25 timer, progress dot, 5 dummy icons no click)
-6. Serial Protocol on Laptop
+6. Serial Protocol on Laptop - DONE (0xFF+24B 0-80 @115200, auto-COM, display-only fallback, 750B/s, 0 COM ports found 2026-09-24)
 7. C3 Firmware Without Screen
 8. Integrate + Hold for OLED
 

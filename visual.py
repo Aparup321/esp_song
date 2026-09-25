@@ -2,6 +2,14 @@ import pygame
 import soundcard as sc
 import numpy as np
 
+# Step 6: serial link to ESP32-C3 (optional, visualizer works without it)
+try:
+    import serial
+    from serial.tools import list_ports
+    HAS_SERIAL = True
+except ImportError:
+    HAS_SERIAL = False
+
 # Initialize Pygame
 pygame.init()
 
@@ -31,6 +39,31 @@ running = True
 
 # Store previous heights for smoothing
 previous_heights = [0] * 24
+
+# Step 6: open C3 serial if present, else run display-only
+ser = None
+if HAS_SERIAL:
+    try:
+        ports = list(list_ports.comports())
+        # Prefer USB serial devices (CH340/CP210x/CDC) but fall back to first port
+        c3_port = None
+        for p in ports:
+            desc = (p.description or "") + " " + (p.manufacturer or "")
+            if any(k in desc for k in ("CH340", "CP210", "USB", "CDC", "Serial")):
+                c3_port = p.device
+                break
+        if c3_port is None and ports:
+            c3_port = ports[0].device
+        if c3_port:
+            ser = serial.Serial(c3_port, 115200, timeout=0)
+            print(f"[serial] C3 link open: {c3_port} @115200")
+        else:
+            print("[serial] no COM port found, display-only mode")
+    except Exception as e:
+        print(f"[serial] open failed ({e}), display-only mode")
+        ser = None
+
+frame_count = 0
 
 clock = pygame.time.Clock()
 
@@ -191,8 +224,30 @@ with mic.recorder(samplerate=48000) as recorder:
                 (x, y, bar_w, height)
             )
 
+        # Step 6: send packet to C3 (0xFF header + 24 bytes 0-80)
+        if ser is not None:
+            try:
+                payload = bytes([max(0, min(80, int(v))) for v in previous_heights])
+                ser.write(bytes([0xFF]) + payload)
+                frame_count += 1
+                if frame_count <= 3:
+                    print(f"[serial] pkt {frame_count}: FF + {payload.hex(' ')}")
+            except Exception as e:
+                print(f"[serial] write failed ({e}), display-only mode")
+                try:
+                    ser.close()
+                except Exception:
+                    pass
+                ser = None
+
         # Update display
         pygame.display.flip()
         clock.tick(30)
+
+if ser is not None:
+    try:
+        ser.close()
+    except Exception:
+        pass
 
 pygame.quit()
