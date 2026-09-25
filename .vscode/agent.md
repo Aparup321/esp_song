@@ -123,7 +123,8 @@ C3 role (no OLED yet): receive `0xFF + 24 bytes` over USB-Serial 115200, blink o
 4. Bottom Mini Visualizer (32 -> 24 bars) - DONE (24 log bands, white, 0-80px, w12/gap4, width 396/400, empty bands [1,3])
 5. Text + Progress + Dummy Controls - DONE (SysFont 32/22/16, fake 0:30/4:25 timer, progress dot, 5 dummy icons no click)
 6. Serial Protocol on Laptop - DONE (0xFF+24B 0-80 @115200, auto-COM, display-only fallback, 750B/s, 0 COM ports found 2026-09-24)
-7. C3 Firmware Without Screen - FIRMWARE READY, AWAITING FLASH (COM3 native USB 303A:1001 found 2026-09-26, `esp_c3_led/esp_c3_led.ino` created, test write OK no reply = old FW still on board)
+7. C3 Firmware Without Screen - DONE (COM3 native USB 303A:1001, `esp_c3_led.ino` flashed + verified, `[c3] ready` seen 2026-09-26, laptop pkt FF+24B proven, onboard blue LED pin not matching this board variant - ignored, OLED is real display)
+8. Integrate + Hold for OLED - LINK DONE, HELD (laptop draws player UI + streams @30fps/750B/s, C3 receives; waiting for OLED arrival, no display code yet)
 8. Integrate + Hold for OLED
 
 ## 6. Env Status - Step 1 DONE 2026-09-24
