@@ -13,7 +13,8 @@
 const uint8_t N_BARS = 24;
 const uint8_t HDR = 0xFF;
 const uint8_t BASS_N = 6;       // bars 0-5 = low freqs
-const uint8_t BASS_THRESH = 8; // 0-80 scale, your music peaks ~15 so 8 catches the beat
+const uint8_t BASS_THRESH = 5; // 0-80 scale, your music peaks ~15 so 5 catches the beat
+uint8_t ledState = LOW; // toggles on every loud beat, visible on any LED polarity
 uint8_t bars[N_BARS];
 uint8_t idx = 0;
 bool inPacket = false;
@@ -22,10 +23,10 @@ unsigned long lastLog = 0;
 void setup() {
   pinMode(LED_PIN, OUTPUT);
   digitalWrite(LED_PIN, LOW);
-  // Boot self-test: blink 5 times so you can SEE which LED this code controls
-  for (uint8_t k = 0; k < 5; k++) {
-    digitalWrite(LED_PIN, HIGH); delay(150);
-    digitalWrite(LED_PIN, LOW); delay(150);
+  // Boot self-test: 3 slow blinks so you can SEE which LED this code controls
+  for (uint8_t k = 0; k < 3; k++) {
+    digitalWrite(LED_PIN, HIGH); delay(300);
+    digitalWrite(LED_PIN, LOW); delay(300);
   }
   Serial.begin(115200);
   // USB CDC: wait briefly for host, don't block forever
@@ -57,7 +58,11 @@ void onPacket() {
   uint16_t sum = 0;
   for (uint8_t i = 0; i < BASS_N; i++) sum += bars[i];
   uint8_t bass = sum / BASS_N;
-  digitalWrite(LED_PIN, bass > BASS_THRESH ? HIGH : LOW);
+  // Toggle on every loud beat: visible whether your LED is ON-type or OFF-type
+  if (bass >= BASS_THRESH) {
+    ledState = (ledState == LOW) ? HIGH : LOW;
+    digitalWrite(LED_PIN, ledState);
+  }
   unsigned long now = millis();
   if (now - lastLog > 500) {
     lastLog = now;
